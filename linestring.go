@@ -132,13 +132,24 @@ func (ls *LineString) Scan(val any) error {
 		return fmt.Errorf("invalid byte order %d", wkbByteOrder)
 	}
 
-	var wkbGeometryType uint64
+	var wkbGeometryType uint32
 	if err := binary.Read(r, byteOrder, &wkbGeometryType); err != nil {
 		return err
 	}
 
-	if wkbGeometryType != 2 {
+	// Handle EWKB format which includes SRID in the geometry type
+	// LineString type can be 2 (WKB) or 0x20000002 (EWKB with SRID)
+	geometryType := wkbGeometryType & 0x1FFFFFFF // Mask out SRID flag
+	if geometryType != 2 {
 		return fmt.Errorf("invalid geometry type for LineString: %d", wkbGeometryType)
+	}
+
+	// If EWKB format, skip the SRID
+	if wkbGeometryType&0x20000000 != 0 {
+		var srid uint32
+		if err := binary.Read(r, byteOrder, &srid); err != nil {
+			return err
+		}
 	}
 
 	var numPoints uint32
