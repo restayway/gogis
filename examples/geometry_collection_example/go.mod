@@ -1,6 +1,6 @@
 module geometry_collection_example
 
-go 1.19
+go 1.27.4
 
 require (
 	github.com/restayway/gogis v0.0.0
